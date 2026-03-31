@@ -16,5 +16,5 @@ async def websocket_endpoint(websocket: WebSocket):
     except Exception as e:
         print(f"Ошибка: {e}")
 
-#Запустите сервер: uvicorn websocket_test:app --reload
-#Запустите клиент: python client_test.py
+#Запустите сервер: uvicorn websocket:app --reload
+#Запустите клиент: python client.py
