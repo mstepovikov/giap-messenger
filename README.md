@@ -1,5 +1,5 @@
 # giap-messenger
-A corporate messenger project with basic functionality. FastAPI+Tkinter
+A corporate messenger project with basic functionality. FastAPI+CustomTkinter
 
 # Installing libraries
 pip install fastapi uvicorn websockets websocket-client requests ldap3 win10toast python-multipart
