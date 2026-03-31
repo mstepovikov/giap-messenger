@@ -1,68 +1,51 @@
+import socket
+import getpass
 import subprocess
-import platform
 
 
-def authenticate_with_domain(username, password):
+def get_user_with_ad_name():
     """
-    Проверка учетных данных через домен Windows
+    Получение имени пользователя и полного имени из AD
     """
-    # Если система Windows
-    if platform.system() == 'Windows':
-        try:
-            # Используем net use для проверки (работает без монтирования диска)
-            cmd = f'net use \\\\giap.org\\IPC$ /user:{username} {password}'
-            result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
+    username = getpass.getuser()
 
-            # Если успешно, команда вернет код 0
-            if result.returncode == 0:
-                # Получаем полное имя пользователя и отдел
-                print("OK", username, password)
-                user_info = get_user_info_from_domain(username)
-                return True, user_info
-            else:
-                return False, None
-        except Exception as e:
-            print(f"Ошибка аутентификации: {e}")
-            return False, None
-    else:
-        # Для Linux/Mac (заглушка)
-        print("Доменная аутентификация доступна только на Windows")
-        # Временно разрешаем любые учетные данные для тестирования
-        return True, {
-            'full_name': username,
-            'department': 'Test Department'
-        }
-
-
-def get_user_info_from_domain(username):
-    """
-    Получение информации о пользователе из Active Directory
-    Требуется установка: pip install ldap3
-    """
+    # Получаем IP
     try:
-        from ldap3 import Server, Connection, ALL
-
-        # Настройки вашего домена (нужно заменить на реальные)
-        server = Server('giap.org', get_info=ALL)
-        conn = Connection(server, user=f'{username}@giap.org', auto_bind=True)
-
-        # Поиск информации о пользователе
-        conn.search('dc=domain,dc=com',
-                    f'(sAMAccountName={username})',
-                    attributes=['displayName', 'department'])
-
-        if conn.entries:
-            return {
-                'full_name': str(conn.entries[0].displayName),
-                'department': str(conn.entries[0].department)
-            }
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        ip_address = s.getsockname()[0]
+        s.close()
     except:
-        # Если не получилось, возвращаем заглушку
-        pass
+        ip_address = socket.gethostbyname(socket.gethostname())
 
-    return {
-        'full_name': username,
-        'department': 'Unknown'
-    }
+    # Получаем полное имя из AD
+    full_name = "Не удалось получить"
+    try:
+        # Запрашиваем информацию о пользователе в домене
+        result = subprocess.run(['net', 'user', username, '/domain'],
+                                capture_output=True, text=True, timeout=10)
 
-authenticate_with_domain(username = "oavp_14", password = "EW.a=8*2T9")
+        if result.returncode == 0:
+            # Парсим вывод net user
+            lines = result.stdout.split('\n')
+            for line in lines:
+                if 'Full Name' in line or 'Полное имя' in line:
+                    # Извлекаем значение после двоеточия
+                    parts = line.split(':')
+                    if len(parts) > 1:
+                        full_name = parts[1].strip()
+                    break
+    except Exception as e:
+        full_name = f"Ошибка: {str(e)}"
+
+    # Выводим результат
+    print("=" * 50)
+    print(f"Логин: {username}")
+    print(f"Полное имя: {full_name}")
+    print(f"IP-адрес: {ip_address}")
+    print("=" * 50)
+
+
+# Запуск
+if __name__ == "__main__":
+    get_user_with_ad_name()
