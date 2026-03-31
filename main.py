@@ -1,565 +1,394 @@
 import customtkinter as ctk
+import tkinter as tk
 from datetime import datetime
-from PIL import Image
-import os
 
 # Настройка темы
 ctk.set_appearance_mode("light")
 ctk.set_default_color_theme("blue")
 
 
-class ModernMessenger:
+class SimpleMessenger:
     def __init__(self):
         self.root = ctk.CTk()
-        self.root.title("Chat")
-        self.root.geometry("1200x750")
-        self.root.minsize(1000, 600)
+        self.root.title("Мессенджер")
+        self.root.geometry("1000x700")
+        self.root.minsize(1000, 700)
 
-        # Цвета
-        self.bg_color = "#f0f2f5"
-        self.sidebar_bg = "#ffffff"
-        self.chat_bg = "#ffffff"
-        self.user_msg_bg = "#e7f3ff"
-        self.other_msg_bg = "#f0f2f5"
-        self.hover_color = "#e9ecef"
+        # Светлая цветовая схема
+        self.bg_color = "#f8f9fa"
+        self.card_color = "#ffffff"
+        self.border_color = "#e9ecef"
+        self.text_primary = "#212529"
+        self.text_secondary = "#868e96"
+        self.message_bg = "#f1f3f5"
 
         # Создание интерфейса
-        self.create_main_layout()
+        self.setup_ui()
 
-        # Добавляем примеры данных
+        # Добавляем пример данных
         self.add_example_data()
 
-        # Запускаем анимацию печатания
-        self.animate_typing()
+    def setup_ui(self):
+        """Настройка основного интерфейса"""
+        # Создание меню (должно быть до остальных элементов)
+        self.create_menu()
 
-    def create_main_layout(self):
-        """Создание основного макета"""
         # Основной контейнер
-        self.main_frame = ctk.CTkFrame(self.root, fg_color=self.bg_color)
-        self.main_frame.pack(fill="both", expand=True)
+        self.main_container = ctk.CTkFrame(
+            self.root,
+            fg_color=self.bg_color
+        )
+        self.main_container.pack(fill="both", expand=True)
 
-        # Левая панель (список чатов)
-        self.create_sidebar()
+        # Контентная область
+        self.content_frame = ctk.CTkFrame(
+            self.main_container,
+            fg_color=self.bg_color
+        )
+        self.content_frame.pack(fill="both", expand=True, padx=1, pady=1)
 
-        # Правая панель (основной чат)
-        self.create_chat_area()
-
-    def create_sidebar(self):
-        """Создание боковой панели"""
+        # Две колонки
         self.sidebar = ctk.CTkFrame(
-            self.main_frame,
-            width=320,
-            fg_color=self.sidebar_bg,
+            self.content_frame,
+            width=280,
+            fg_color=self.card_color,
             corner_radius=0
         )
         self.sidebar.pack(side="left", fill="y")
         self.sidebar.pack_propagate(False)
 
-        # Заголовок "Chat"
-        header_frame = ctk.CTkFrame(self.sidebar, fg_color="transparent")
-        header_frame.pack(fill="x", padx=16, pady=(16, 8))
-
-        chat_title = ctk.CTkLabel(
-            header_frame,
-            text="Chat",
-            font=ctk.CTkFont(size=28, weight="bold"),
-            text_color="#1a1a1a"
-        )
-        chat_title.pack(side="left")
-
-        # Кнопка нового чата
-        new_chat_btn = ctk.CTkButton(
-            header_frame,
-            text="+",
-            width=30,
-            height=30,
-            font=ctk.CTkFont(size=20),
-            fg_color="transparent",
-            text_color="#0084ff",
-            hover_color=self.hover_color,
-            corner_radius=15,
-            command=self.new_chat
-        )
-        new_chat_btn.pack(side="right")
-
-        # Поле поиска
-        self.search_entry = ctk.CTkEntry(
-            self.sidebar,
-            placeholder_text="🔍 Поиск",
-            height=40,
-            font=ctk.CTkFont(size=13),
-            fg_color="#f0f2f5",
-            text_color="#1a1a1a",
-            corner_radius=20
-        )
-        self.search_entry.pack(fill="x", padx=16, pady=(0, 12))
-
-        # Заголовок "Last chats"
-        last_chats_label = ctk.CTkLabel(
-            self.sidebar,
-            text="Last chats",
-            font=ctk.CTkFont(size=14, weight="bold"),
-            text_color="#1a1a1a"
-        )
-        last_chats_label.pack(anchor="w", padx=16, pady=(0, 8))
-
-        # Скроллируемый фрейм для чатов
-        self.chats_scroll = ctk.CTkScrollableFrame(
-            self.sidebar,
-            fg_color="transparent",
-            scrollbar_button_color="#c1c1c1",
-            scrollbar_button_hover_color="#a1a1a1"
-        )
-        self.chats_scroll.pack(fill="both", expand=True, padx=8)
-
-        # Данные чатов
-        self.chats = [
-            {
-                "name": "Real estate deals",
-                "status": "typing...",
-                "time": "11:15",
-                "unread": False,
-                "avatar": "🏠",
-                "messages": [
-                    {"sender": "Kate Johnson",
-                     "text": "Recently I saw properties in a great location that I did not pay attention to before 😊",
-                     "time": "11:24", "is_user": False},
-                    {"sender": "Evan Scott", "text": "Ooo, why don't you say something more", "time": "11:25",
-                     "is_user": False},
-                    {"sender": "Evan Scott", "text": "@Robert ? 😉", "time": "11:25", "is_user": False},
-                    {"sender": "You", "text": "He creates an atmosphere of mystery 😉", "time": "11:26", "is_user": True}
-                ]
-            },
-            {
-                "name": "Kate Johnson",
-                "status": "I will send the document s...",
-                "time": "11:15",
-                "unread": False,
-                "avatar": "KJ",
-                "messages": [
-                    {"sender": "You", "text": "Hi Kate! How are you?", "time": "10:30", "is_user": True},
-                    {"sender": "Kate Johnson", "text": "Hello! I'm doing great, thanks! Just finished the project",
-                     "time": "10:31", "is_user": False},
-                    {"sender": "You", "text": "That's awesome! Can you share the documents?", "time": "10:32",
-                     "is_user": True},
-                    {"sender": "Kate Johnson", "text": "Sure, I'll send them right away", "time": "10:33",
-                     "is_user": False}
-                ]
-            },
-            {
-                "name": "Tamara Shevchenko",
-                "status": "are you going to a busine...",
-                "time": "10:05",
-                "unread": False,
-                "avatar": "TS",
-                "messages": [
-                    {"sender": "Tamara Shevchenko", "text": "Are you going to the business conference tomorrow?",
-                     "time": "10:05", "is_user": False},
-                    {"sender": "You", "text": "Yes, I'll be there! See you tomorrow", "time": "10:06", "is_user": True}
-                ]
-            },
-            {
-                "name": "Joshua Clarkson",
-                "status": "I suggest to start, I have n...",
-                "time": "15.09",
-                "unread": False,
-                "avatar": "JC",
-                "messages": [
-                    {"sender": "Joshua Clarkson", "text": "I suggest to start, I have new ideas for the project",
-                     "time": "15:09", "is_user": False},
-                    {"sender": "You", "text": "Great! Let's schedule a meeting", "time": "15:10", "is_user": True}
-                ]
-            },
-            {
-                "name": "Jeroen Zoet",
-                "status": "We need to start a new re...",
-                "time": "14.09",
-                "unread": False,
-                "avatar": "JZ",
-                "messages": [
-                    {"sender": "Jeroen Zoet", "text": "We need to start a new research project", "time": "14:09",
-                     "is_user": False},
-                    {"sender": "You", "text": "Sounds interesting! Let's discuss details", "time": "14:10",
-                     "is_user": True}
-                ]
-            }
-        ]
-
-        # Создаем виджеты чатов
-        self.chat_widgets = []
-        for i, chat in enumerate(self.chats):
-            self.add_chat_item(chat, i)
-
-    def add_chat_item(self, chat, index):
-        """Добавление элемента чата"""
-        # Контейнер для чата
-        chat_frame = ctk.CTkFrame(
-            self.chats_scroll,
-            fg_color="transparent",
-            corner_radius=10,
-            height=70
-        )
-        chat_frame.pack(fill="x", pady=2)
-        chat_frame.pack_propagate(False)
-
-        # Привязываем события
-        chat_frame.bind('<Enter>', lambda e, f=chat_frame: self.on_chat_hover_enter(f))
-        chat_frame.bind('<Leave>', lambda e, f=chat_frame: self.on_chat_hover_leave(f))
-        chat_frame.bind('<Button-1>', lambda e, i=index: self.select_chat(i))
-
-        # Аватар
-        avatar_frame = ctk.CTkFrame(
-            chat_frame,
-            width=50,
-            height=50,
-            fg_color="#e4e6eb",
-            corner_radius=25
-        )
-        avatar_frame.pack(side="left", padx=(8, 12), pady=10)
-        avatar_frame.pack_propagate(False)
-
-        avatar_label = ctk.CTkLabel(
-            avatar_frame,
-            text=chat["avatar"],
-            font=ctk.CTkFont(size=18, weight="bold"),
-            text_color="#1a1a1a"
-        )
-        avatar_label.pack(expand=True)
-
-        # Информация о чате
-        info_frame = ctk.CTkFrame(chat_frame, fg_color="transparent")
-        info_frame.pack(side="left", fill="both", expand=True, pady=10)
-
-        name_label = ctk.CTkLabel(
-            info_frame,
-            text=chat["name"],
-            font=ctk.CTkFont(size=13, weight="bold"),
-            text_color="#1a1a1a",
-            anchor="w"
-        )
-        name_label.pack(anchor="w")
-
-        status_label = ctk.CTkLabel(
-            info_frame,
-            text=chat["status"],
-            font=ctk.CTkFont(size=11),
-            text_color="#65676b",
-            anchor="w"
-        )
-        status_label.pack(anchor="w")
-
-        # Время
-        time_label = ctk.CTkLabel(
-            chat_frame,
-            text=chat["time"],
-            font=ctk.CTkFont(size=10),
-            text_color="#65676b"
-        )
-        time_label.pack(side="right", padx=12)
-
-        # Сохраняем ссылки
-        chat_frame.index = index
-        chat_frame.name = chat["name"]
-
-    def on_chat_hover_enter(self, frame):
-        """Эффект при наведении"""
-        if not hasattr(frame, 'selected') or not frame.selected:
-            frame.configure(fg_color=self.hover_color)
-
-    def on_chat_hover_leave(self, frame):
-        """Снятие эффекта"""
-        if not hasattr(frame, 'selected') or not frame.selected:
-            frame.configure(fg_color="transparent")
-
-    def select_chat(self, index):
-        """Выбор чата"""
-        # Обновляем выделение
-        for i, widget in enumerate(self.chats_scroll.winfo_children()):
-            if hasattr(widget, 'selected'):
-                delattr(widget, 'selected')
-                widget.configure(fg_color="transparent")
-
-        selected_widget = self.chats_scroll.winfo_children()[index]
-        selected_widget.selected = True
-        selected_widget.configure(fg_color=self.hover_color)
-
-        # Обновляем заголовок и участников
-        chat = self.chats[index]
-        self.chat_header_label.configure(text=chat["name"])
-
-        # Обновляем список участников
-        if index == 0:
-            members_text = "Kate Johnson, Evan Scott, Robert"
-        else:
-            members_text = chat["name"]
-        self.members_label.configure(text=members_text)
-
-        # Загружаем сообщения
-        self.load_chat_messages(index)
-
-    def create_chat_area(self):
-        """Создание области чата"""
         self.chat_area = ctk.CTkFrame(
-            self.main_frame,
-            fg_color=self.chat_bg,
+            self.content_frame,
+            fg_color=self.bg_color,
             corner_radius=0
         )
         self.chat_area.pack(side="right", fill="both", expand=True)
 
-        # Заголовок чата
-        header_frame = ctk.CTkFrame(
-            self.chat_area,
+        # Заполнение интерфейса
+        self.create_sidebar()
+        self.create_chat_area()
+
+    def create_menu(self):
+        """Создание верхнего меню"""
+        menubar = tk.Menu(self.root)
+        self.root.config(menu=menubar)
+
+        # Меню "Файл"
+        file_menu = tk.Menu(menubar, tearoff=0)
+        menubar.add_cascade(label="Файл", menu=file_menu)
+        file_menu.add_command(label="Новый чат", command=self.new_chat)
+        file_menu.add_separator()
+        file_menu.add_command(label="Выход", command=self.root.quit)
+
+        # Меню "Правка"
+        edit_menu = tk.Menu(menubar, tearoff=0)
+        menubar.add_cascade(label="Правка", menu=edit_menu)
+        edit_menu.add_command(label="Настройки", command=self.settings)
+
+        # Меню "Помощь"
+        help_menu = tk.Menu(menubar, tearoff=0)
+        menubar.add_cascade(label="Помощь", menu=help_menu)
+        help_menu.add_command(label="О программе", command=self.about)
+
+    def create_sidebar(self):
+        """Создание боковой панели"""
+        # Заголовок
+        header = ctk.CTkFrame(self.sidebar, fg_color="transparent", height=70)
+        header.pack(fill="x", padx=20, pady=(20, 10))
+        header.pack_propagate(False)
+
+        title = ctk.CTkLabel(
+            header,
+            text="Чаты",
+            font=ctk.CTkFont(size=20, weight="normal"),
+            text_color=self.text_primary
+        )
+        title.pack(side="left")
+
+        # Поиск
+        self.search = ctk.CTkEntry(
+            self.sidebar,
+            placeholder_text="Поиск",
+            height=36,
+            font=ctk.CTkFont(size=13),
+            fg_color=self.bg_color,
+            text_color=self.text_primary,
+            corner_radius=8,
+            border_width=0
+        )
+        self.search.pack(fill="x", padx=20, pady=(0, 20))
+
+        # Список чатов
+        self.chats_frame = ctk.CTkScrollableFrame(
+            self.sidebar,
             fg_color="transparent",
-            height=70,
-            border_width=0,
-            border_spacing=0
+            scrollbar_button_color="#dee2e6"
         )
-        header_frame.pack(fill="x", padx=20, pady=(15, 0))
-        header_frame.pack_propagate(False)
+        self.chats_frame.pack(fill="both", expand=True, padx=12)
 
-        self.chat_header_label = ctk.CTkLabel(
-            header_frame,
-            text="Real estate deals",
-            font=ctk.CTkFont(size=20, weight="bold"),
-            text_color="#1a1a1a"
+        # Данные чатов
+        self.chats_data = [
+            {"name": "Кейт Джонсон", "preview": "Я отправлю документ...", "time": "11:15"},
+            {"name": "Недвижимость", "preview": "печатает...", "time": "11:15"},
+            {"name": "Тамара Шевченко", "preview": "ты собираешься на деловую...", "time": "10:05"},
+            {"name": "Джошуа Кларксон", "preview": "Предлагаю начать, у меня...", "time": "15.09"},
+            {"name": "Йерун Зут", "preview": "Нам нужно начать новый...", "time": "14.09"},
+            {"name": "Кейт Джонсон", "preview": "Я отправлю документ...", "time": "11:15"},
+            {"name": "Недвижимость", "preview": "печатает...", "time": "11:15"},
+            {"name": "Тамара Шевченко", "preview": "ты собираешься на деловую...", "time": "10:05"},
+            {"name": "Джошуа Кларксон", "preview": "Предлагаю начать, у меня...", "time": "15.09"},
+            {"name": "Йерун Зут", "preview": "Нам нужно начать новый...", "time": "14.09"},
+            {"name": "Кейт Джонсон", "preview": "Я отправлю документ...", "time": "11:15"},
+            {"name": "Недвижимость", "preview": "печатает...", "time": "11:15"},
+            {"name": "Тамара Шевченко", "preview": "ты собираешься на деловую...", "time": "10:05"},
+            {"name": "Джошуа Кларксон", "preview": "Предлагаю начать, у меня...", "time": "15.09"},
+            {"name": "Йерун Зут", "preview": "Нам нужно начать новый...", "time": "14.09"}
+        ]
+
+        # Создаем элементы чатов
+        self.chat_items = []
+        for i, chat in enumerate(self.chats_data):
+            self.add_chat_item(chat, i)
+
+    def add_chat_item(self, chat, index):
+        """Добавление элемента чата"""
+        # Контейнер чата
+        chat_item = ctk.CTkFrame(
+            self.chats_frame,
+            fg_color="transparent",
+            height=65,
+            corner_radius=8
         )
-        self.chat_header_label.pack(side="left")
+        chat_item.pack(fill="x", pady=2)
+        chat_item.pack_propagate(False)
 
-        self.members_label = ctk.CTkLabel(
-            header_frame,
-            text="Kate Johnson, Evan Scott, Robert",
+        # Информация
+        info_frame = ctk.CTkFrame(chat_item, fg_color="transparent")
+        info_frame.pack(side="left", fill="both", expand=True, padx=12, pady=8)
+
+        name = ctk.CTkLabel(
+            info_frame,
+            text=chat["name"],
+            font=ctk.CTkFont(size=14, weight="normal"),
+            text_color=self.text_primary,
+            anchor="w"
+        )
+        name.pack(anchor="w")
+
+        preview = ctk.CTkLabel(
+            info_frame,
+            text=chat["preview"],
             font=ctk.CTkFont(size=12),
-            text_color="#65676b"
+            text_color=self.text_secondary,
+            anchor="w"
         )
-        self.members_label.pack(side="left", padx=(10, 0))
+        preview.pack(anchor="w", pady=(2, 0))
 
-        # Разделитель
-        separator = ctk.CTkFrame(
-            self.chat_area,
-            height=1,
-            fg_color="#e4e6eb"
+        # Время
+        time = ctk.CTkLabel(
+            chat_item,
+            text=chat["time"],
+            font=ctk.CTkFont(size=11),
+            text_color=self.text_secondary
         )
-        separator.pack(fill="x", padx=20, pady=(10, 0))
+        time.pack(side="right", padx=12)
+
+        # Сохраняем ссылку
+        chat_item.index = index
+        chat_item.bind("<Button-1>", lambda e, i=index: self.select_chat(i))
+
+        self.chat_items.append(chat_item)
+
+    def create_chat_area(self):
+        """Создание области чата"""
+        # Заголовок чата
+        header = ctk.CTkFrame(self.chat_area, fg_color="transparent", height=70)
+        header.pack(fill="x", padx=24, pady=(20, 0))
+        header.pack_propagate(False)
+
+        self.chat_title = ctk.CTkLabel(
+            header,
+            text="Кейт Джонсон",
+            font=ctk.CTkFont(size=18, weight="normal"),
+            text_color=self.text_primary
+        )
+        self.chat_title.pack(side="left")
 
         # Область сообщений
         self.messages_frame = ctk.CTkScrollableFrame(
             self.chat_area,
             fg_color="transparent",
-            scrollbar_button_color="#c1c1c1"
+            scrollbar_button_color="#dee2e6"
         )
-        self.messages_frame.pack(fill="both", expand=True, padx=20, pady=(15, 10))
+        self.messages_frame.pack(fill="both", expand=True, padx=24, pady=(16, 12))
 
-        # Индикатор печатания
-        typing_frame = ctk.CTkFrame(self.chat_area, fg_color="transparent", height=30)
-        typing_frame.pack(fill="x", padx=20)
-        typing_frame.pack_propagate(False)
+        # Поле ввода (горизонтальная компоновка)
+        input_container = ctk.CTkFrame(self.chat_area, fg_color="transparent", height=60)
+        input_container.pack(fill="x", padx=24, pady=(0, 20))
+        input_container.pack_propagate(False)
 
-        self.typing_label = ctk.CTkLabel(
-            typing_frame,
-            text="Robert is typing...",
-            font=ctk.CTkFont(size=11, slant="italic"),
-            text_color="#65676b"
-        )
-        self.typing_label.pack(anchor="w")
+        # Создаем горизонтальный фрейм
+        input_row = ctk.CTkFrame(input_container, fg_color="transparent")
+        input_row.pack(fill="both", expand=True)
 
-        # Область ввода сообщения
-        input_frame = ctk.CTkFrame(self.chat_area, fg_color="transparent", height=80)
-        input_frame.pack(fill="x", padx=20, pady=(0, 20))
-        input_frame.pack_propagate(False)
-
-        # Контейнер для поля ввода
-        input_container = ctk.CTkFrame(
-            input_frame,
-            fg_color="#f0f2f5",
-            corner_radius=20,
-            border_width=1,
-            border_color="#e4e6eb"
-        )
-        input_container.pack(fill="both", expand=True)
-
-        self.message_entry = ctk.CTkTextbox(
-            input_container,
+        # Поле ввода текста
+        self.message_input = ctk.CTkTextbox(
+            input_row,
             height=50,
             font=ctk.CTkFont(size=13),
-            fg_color="#f0f2f5",
-            text_color="#1a1a1a",
-            corner_radius=20,
-            wrap="word"
+            fg_color=self.card_color,
+            text_color=self.text_primary,
+            corner_radius=12,
+            border_width=1,
+            border_color=self.border_color
         )
-        self.message_entry.pack(side="left", fill="both", expand=True, padx=12, pady=8)
+        self.message_input.pack(side="left", fill="both", expand=True)
 
         # Кнопка отправки
-        send_button = ctk.CTkButton(
-            input_container,
-            text="➤",
-            width=40,
-            height=40,
-            font=ctk.CTkFont(size=20),
-            fg_color="transparent",
-            text_color="#0084ff",
-            hover_color="#e4e6eb",
-            corner_radius=20,
+        send_btn = ctk.CTkButton(
+            input_row,
+            text="Отправить",
+            width=90,
+            height=50,
+            font=ctk.CTkFont(size=13),
+            fg_color=self.bg_color,
+            text_color=self.text_primary,
+            hover_color=self.border_color,
+            corner_radius=12,
+            border_width=1,
+            border_color=self.border_color,
             command=self.send_message
         )
-        send_button.pack(side="right", padx=8)
+        send_btn.pack(side="right", padx=(12, 0))
 
         # Привязка клавиш
-        self.message_entry.bind('<Control-Return>', self.send_message)
+        self.message_input.bind("<Command-Return>", self.send_message)
+        self.message_input.bind("<Control-Return>", self.send_message)
 
-    def load_chat_messages(self, index):
-        """Загрузка сообщений для выбранного чата"""
-        # Очищаем область сообщений
+    def select_chat(self, index):
+        """Выбор чата"""
+        chat = self.chats_data[index]
+        self.chat_title.configure(text=chat["name"])
+
+        # Очищаем сообщения
         for widget in self.messages_frame.winfo_children():
             widget.destroy()
 
-        # Загружаем сообщения
-        chat = self.chats[index]
-        for msg in chat["messages"]:
-            self.add_message(msg["sender"], msg["text"], msg["time"], msg["is_user"])
+        # Загружаем пример сообщений
+        if index == 0:  # Кейт Джонсон
+            self.add_message("Кейт Джонсон", "Привет! Как дела?", "10:30")
+            self.add_message("Вы", "Хорошо, спасибо! А у тебя?", "10:31", is_user=True)
+            self.add_message("Кейт Джонсон", "Я скоро отправлю документ", "11:15")
+            self.add_message("Кейт Джонсон", "Недавно я увидела отличную недвижимость в хорошем месте", "11:24")
+            self.add_message("Кейт Джонсон", "Ого, расскажи подробнее", "11:25")
+            self.add_message("Вы", "Он создает атмосферу загадочности 😉", "11:26", is_user=True)
+            self.add_message("Кейт Джонсон", "печатает...", "11:27")
+            self.add_message("Кейт Джонсон", "Ты собираешься на деловую встречу завтра?", "10:05")
+            self.add_message("Вы", "Да, буду там. Увидимся!", "10:06", is_user=True)
+            self.add_message("Кейт Джонсон", "Предлагаю начать, у меня есть новые идеи для проекта", "15:09")
+            self.add_message("Вы", "Отлично! Давай обсудим", "15:10", is_user=True)
+        elif index == 1:  # Недвижимость
+            self.add_message("Кейт Джонсон", "Недавно я увидела отличную недвижимость в хорошем месте", "11:24")
+            self.add_message("Кейт Джонсон", "Ого, расскажи подробнее", "11:25")
+            self.add_message("Вы", "Он создает атмосферу загадочности 😉", "11:26", is_user=True)
+            self.add_message("Кейт Джонсон", "печатает...", "11:27")
+        elif index == 2:  # Тамара Шевченко
+            self.add_message("Тамара Шевченко", "Ты собираешься на деловую встречу завтра?", "10:05")
+            self.add_message("Вы", "Да, буду там. Увидимся!", "10:06", is_user=True)
+        elif index == 3:  # Джошуа Кларксон
+            self.add_message("Джошуа Кларксон", "Предлагаю начать, у меня есть новые идеи для проекта", "15:09")
+            self.add_message("Вы", "Отлично! Давай обсудим", "15:10", is_user=True)
+        else:  # Йерун Зут
+            self.add_message("Йерун Зут", "Нам нужно начать новый исследовательский проект", "14:09")
+            self.add_message("Вы", "Звучит интересно! Давай обсудим детали", "14:10", is_user=True)
 
     def add_message(self, sender, text, time, is_user=False):
-        """Добавление сообщения в чат"""
-        # Контейнер для сообщения
-        msg_container = ctk.CTkFrame(
-            self.messages_frame,
-            fg_color="transparent"
-        )
-        msg_container.pack(fill="x", pady=(0, 12))
+        """Добавление сообщения"""
+        msg_container = ctk.CTkFrame(self.messages_frame, fg_color="transparent")
+        msg_container.pack(fill="x", pady=(0, 16))
 
         if is_user:
-            # Свое сообщение (справа)
+            # Свое сообщение
             msg_frame = ctk.CTkFrame(
                 msg_container,
-                fg_color=self.user_msg_bg,
+                fg_color=self.message_bg,
                 corner_radius=12
             )
-            msg_frame.pack(side="right", padx=(50, 0))
+            msg_frame.pack(side="right", padx=(40, 0))
 
-            # Текст сообщения
             msg_text = ctk.CTkLabel(
                 msg_frame,
                 text=text,
                 font=ctk.CTkFont(size=13),
-                text_color="#1a1a1a",
-                wraplength=400,
+                text_color=self.text_primary,
+                wraplength=350,
                 justify="right"
             )
             msg_text.pack(padx=12, pady=(8, 4))
 
-            # Время
             time_label = ctk.CTkLabel(
                 msg_frame,
                 text=time,
                 font=ctk.CTkFont(size=10),
-                text_color="#65676b"
+                text_color=self.text_secondary
             )
-            time_label.pack(anchor="e", padx=12, pady=(0, 8))
-
+            time_label.pack(anchor="e", padx=12, pady=(0, 6))
         else:
-            # Чужое сообщение (слева)
-            # Имя отправителя
+            # Чужое сообщение
             name_label = ctk.CTkLabel(
                 msg_container,
                 text=sender,
-                font=ctk.CTkFont(size=12, weight="bold"),
-                text_color="#1a1a1a"
+                font=ctk.CTkFont(size=12, weight="normal"),
+                text_color=self.text_secondary
             )
-            name_label.pack(anchor="w", padx=(0, 0), pady=(0, 2))
+            name_label.pack(anchor="w", pady=(0, 2))
 
             msg_frame = ctk.CTkFrame(
                 msg_container,
-                fg_color=self.other_msg_bg,
+                fg_color=self.message_bg,
                 corner_radius=12
             )
-            msg_frame.pack(side="left", padx=(0, 50))
+            msg_frame.pack(side="left", padx=(0, 40))
 
-            # Текст сообщения
             msg_text = ctk.CTkLabel(
                 msg_frame,
                 text=text,
                 font=ctk.CTkFont(size=13),
-                text_color="#1a1a1a",
-                wraplength=400,
+                text_color=self.text_primary,
+                wraplength=350,
                 justify="left"
             )
             msg_text.pack(padx=12, pady=(8, 4))
 
-            # Время
             time_label = ctk.CTkLabel(
                 msg_frame,
                 text=time,
                 font=ctk.CTkFont(size=10),
-                text_color="#65676b"
+                text_color=self.text_secondary
             )
-            time_label.pack(anchor="w", padx=12, pady=(0, 8))
+            time_label.pack(anchor="w", padx=12, pady=(0, 6))
 
     def send_message(self, event=None):
         """Отправка сообщения"""
-        message = self.message_entry.get("1.0", "end-1c").strip()
+        message = self.message_input.get("1.0", "end-1c").strip()
 
         if message:
             current_time = datetime.now().strftime("%H:%M")
-            current_chat = self.get_current_chat()
+            self.add_message("Вы", message, current_time, is_user=True)
+            self.message_input.delete("1.0", "end")
 
-            if current_chat is not None:
-                # Добавляем сообщение в данные
-                current_chat["messages"].append({
-                    "sender": "You",
-                    "text": message,
-                    "time": current_time,
-                    "is_user": True
-                })
-
-                # Обновляем статус чата
-                current_chat["status"] = message[:30] + "..." if len(message) > 30 else message
-                current_chat["time"] = current_time
-
-                # Добавляем сообщение в интерфейс
-                self.add_message("You", message, current_time, True)
-
-                # Очищаем поле ввода
-                self.message_entry.delete("1.0", "end")
-
-                # Обновляем список чатов
-                self.update_chat_list()
-
-    def get_current_chat(self):
-        """Получение текущего чата"""
-        current_name = self.chat_header_label.cget("text")
-        for chat in self.chats:
-            if chat["name"] == current_name:
-                return chat
-        return None
-
-    def update_chat_list(self):
-        """Обновление списка чатов"""
-        # Очищаем список
-        for widget in self.chats_scroll.winfo_children():
-            widget.destroy()
-
-        # Пересоздаем чаты
-        for i, chat in enumerate(self.chats):
-            self.add_chat_item(chat, i)
-
-    def animate_typing(self):
-        """Анимация статуса печатания"""
-        dots = 0
-
-        def update_typing():
-            nonlocal dots
-            dots = (dots + 1) % 4
-            text = "Robert is typing" + "." * dots
-            self.typing_label.configure(text=text)
-            self.root.after(500, update_typing)
-
-        update_typing()
+    def add_example_data(self):
+        """Добавление примера сообщений"""
+        self.add_message("Кейт Джонсон", "Привет! Как дела?", "10:30")
+        self.add_message("Вы", "Хорошо, спасибо! А у тебя?", "10:31", is_user=True)
+        self.add_message("Кейт Джонсон", "Я скоро отправлю документ", "11:15")
 
     def new_chat(self):
         """Создание нового чата"""
-        # Создаем диалоговое окно
+        # Создаем диалог для ввода имени чата
         dialog = ctk.CTkInputDialog(
-            text="Enter chat name:",
-            title="New Chat"
+            text="Введите название чата:",
+            title="Новый чат"
         )
         chat_name = dialog.get_input()
 
@@ -567,24 +396,77 @@ class ModernMessenger:
             # Добавляем новый чат
             new_chat = {
                 "name": chat_name,
-                "status": "No messages yet",
-                "time": "Now",
-                "unread": False,
-                "avatar": chat_name[0].upper(),
-                "messages": []
+                "preview": "Нет сообщений",
+                "time": "только что"
             }
-            self.chats.append(new_chat)
-            self.update_chat_list()
+            self.chats_data.append(new_chat)
+            self.add_chat_item(new_chat, len(self.chats_data) - 1)
+
+    def settings(self):
+        """Настройки"""
+        settings_window = ctk.CTkToplevel(self.root)
+        settings_window.title("Настройки")
+        settings_window.geometry("400x300")
+        settings_window.grab_set()
+
+        label = ctk.CTkLabel(
+            settings_window,
+            text="Настройки приложения",
+            font=ctk.CTkFont(size=16),
+            text_color=self.text_primary
+        )
+        label.pack(pady=50)
+
+        close_btn = ctk.CTkButton(
+            settings_window,
+            text="Закрыть",
+            command=settings_window.destroy,
+            fg_color=self.bg_color,
+            text_color=self.text_primary,
+            hover_color=self.border_color
+        )
+        close_btn.pack(pady=20)
+
+    def about(self):
+        """О программе"""
+        about_window = ctk.CTkToplevel(self.root)
+        about_window.title("О программе")
+        about_window.geometry("400x250")
+        about_window.grab_set()
+
+        about_text = """
+        Мессенджер
+
+        Версия: 1.0.0
+        Простой и удобный мессенджер
+
+        © 2024
+        """
+
+        label = ctk.CTkLabel(
+            about_window,
+            text=about_text,
+            font=ctk.CTkFont(size=12),
+            text_color=self.text_primary,
+            justify="center"
+        )
+        label.pack(expand=True)
+
+        close_btn = ctk.CTkButton(
+            about_window,
+            text="Закрыть",
+            command=about_window.destroy,
+            fg_color=self.bg_color,
+            text_color=self.text_primary,
+            hover_color=self.border_color
+        )
+        close_btn.pack(pady=20)
 
     def run(self):
         """Запуск приложения"""
         self.root.mainloop()
 
 
-def main():
-    app = ModernMessenger()
-    app.run()
-
-
 if __name__ == "__main__":
-    main()
+    app = SimpleMessenger()
+    app.run()
