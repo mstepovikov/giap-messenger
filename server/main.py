@@ -122,3 +122,8 @@ if __name__ == "__main__":
     import uvicorn
 
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
+
+# cd server переходим в директорию server
+# uvicorn main:app --reload запускаем сервер для остановки ctrl+C
+# cd .. возвращаемся на директорию выше
